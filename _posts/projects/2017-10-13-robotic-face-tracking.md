@@ -13,8 +13,6 @@ description: "Motorized webcam is controlled by a face tracking algorithm that r
 7. Robotic deployment
 8. Future improvements
 
-The full code can be found here:
-
 ## Overview
 Objectives:
 1. Achieve real-time face detection (>10 FPS)
@@ -45,7 +43,7 @@ The training data was augmented through standard image augmentation methods:
 Since real-time inference was a huge component of this project, I went with [You Only Look Once (YOLO)](https://pjreddie.com/darknet/yolo/) [2], the current state-of-the-art real-time object detection framework.  YOLO treats object detection as a regression problem where the bounding box coordinates for each class are predicted through a single network.  Previous object detection frameworks used a dual network approach where one network proposed regions of interest and the other network classified objects within those regions.  Instead, YOLO uses a single network predicting the proposal regions and detected classes in a single pass.  
 
 ## Robotic deployment
-With the model trained, I needed to interface the YOLO framework with ROS, but at the time, no such interface existed.  I wrote an ROS wrapper, darknet_ros found here:, that interfaces the C++ ROS libraries with the C/Cuda code of the YOLO framework.  Long story short, darknet_ros captures the images from the webcam and sends them to YOLO.  YOLO does the model inference and sends the results back to the ROS node.  
+With the model trained, I needed to interface the YOLO framework with ROS, but at the time, no such interface existed.  I wrote an ROS wrapper, darknet_ros found here: [darknet_ros](https://github.com/pgigioli/darknet_ros), that interfaces the C++ ROS libraries with the C/Cuda code of the YOLO framework.  Long story short, darknet_ros captures the images from the webcam and sends them to YOLO.  YOLO does the model inference and sends the results back to the ROS node.  
 
 To get the camera to track the face, I created a simple algorithm that takes the bounding box coordinates from the darknet_ros node and draws a boundary zone in the middle of the field of view.  If the bounding box coordinates move outside this boundary, a pan/tilt command will be sent to the camera's motor.  Also, since the camera has maximum rotation angle, the robot itself will rotate using its mobile base if the camera nears it maximum angle of rotation.  This was a non-trivial challenge as the robotic system has to keep track of the relative positions of the camera and the robot base.
 

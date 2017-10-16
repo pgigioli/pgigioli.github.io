@@ -14,8 +14,6 @@ description: "Real-time depth prediction from webcam using deep learning.  RGB-d
 7. Robotic deployment
 8. Future improvements
 
-The full code can be found here:
-
 ## Overview
 Objectives:
 1. Automated data collection
