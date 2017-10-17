@@ -11,6 +11,10 @@ theme: minima
 plugins:
   - jekyll-feed
 
+navbar-links:
+  About: "About"
+  Projects: "Projects"
+
 defaults:
   -
     scope:
