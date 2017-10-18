@@ -2,7 +2,7 @@
 title:  "Real-time Depth Prediction"
 date:   2017-10-11 23:05:33 -0400
 thumbnail_url: /images/real-time_depth_prediction/real_time_depth_net_screenshot.png
-description: "Real-time depth prediction from webcam using deep learning.  RGB-depth image pairs were collected automatically using a robot equipped with a 3D sensor."
+description: "I trained a CNN model to perform depth prediction from single RGB images and deployed the model in real-time from a webcam feed.  RGB-depth image pairs were collected automatically using a robot equipped with a 3D sensor."
 ---
 
 ## Contents
@@ -16,47 +16,49 @@ description: "Real-time depth prediction from webcam using deep learning.  RGB-d
 
 ## Overview
 Objectives:
-1. Automated data collection
-2. Real-time neural network deployment
+1. Automated data collection using a mobile robot
+2. Real-time model inference speeds
 
-The goal of this project was to achieve real-time depth vision on a robot through a completely "in-house, start-to-finish" procedure.  By "in-house, start-to-finish", I mean that this project included everything from data collection through model deployment.
+The goal of this project was to train a Convolutional Neural Network (CNN) to perform depth prediction from single images in real-time.  By "real-time" I mean that the model should be able to receive images from a webcam feed and make continuous predictions.  As an added bonus, I incorporated a robot into the mix and used it to automatically collect RGB-depth image pairs for training as well as demonstrate a live application of real-time depth prediction. This project was done completely in-house (no open source datasets were used) and end-to-end (from data collection to robotic deployment).  
 
-Single image depth prediction involves mapping each pixel of an RGB image to a single continuous depth value. This can be thought of as an image segmentation problem except that it is a regression rather than a classification.  
+Background:
+
+CNNs have been spectacularly effective at numerous computer vision tasks such as object detection (drawing bounding boxes around objects) and image segmentation (pixel-wise classification).  Single image depth prediction is similar to image segmentation in that it involves mapping each pixel of an RGB image to a single continuous depth value. Rather than performing a pixel-wise classification of the RGB image, we are doing a regression on each pixel.  
 
 Constraints:
-- Depth predictions are mapped from a single image
-- Model must be deployed locally on an embedded system
-- Inference in real-time (I define real-time as >10 FPS)
+1. Depth predictions must be predicted directly from a single image (monocular scenario)
+2. Model inference must be done locally on the robot and cannot use external cloud resources
+3. Inference speed must be faster than 10 frames per second (technically, real-time is anything greater than 1 FPS but I define real-time to be >10 FPS for aesthetic reasons)
 
 ## Hardware
-For the robot, I used a [Turtlebot 2](http://www.turtlebot.com/turtlebot2/) equipped with an [ASUS Xtion Pro](https://www.asus.com/us/3D-Sensor/Xtion_PRO_LIVE/) 3D sensor and a [Jetson TX1](https://developer.nvidia.com/embedded/buy/jetson-tx1-devkit) embedded board.  
+For the robot, I used a [Turtlebot 2](http://www.turtlebot.com/turtlebot2/) equipped with an [ASUS Xtion Pro](https://www.asus.com/us/3D-Sensor/Xtion_PRO_LIVE/) 3D sensor and a [Jetson TX1](https://developer.nvidia.com/embedded/buy/jetson-tx1-devkit) embedded board.  The Turtlebot 2 is essentially just a mobile base but is very useful because it has a number of Robot Operating System (ROS) drivers available that allow for easy software integration.  The ASUS sensor is capable of capturing depth streams and RGB images at the same time, although there is an offset distance between these captured streams that needs to be calibrated.  Finally, the TX1 has an integrated GPU capable of 4 GB of VRAM and has Linux, ROS, and Caffe installed.
 
 ## Data collection
-Single image depth prediction involves mapping an RGB image to an equally sized depth map.  In order to train a "mapping" model, I needed to collect RGB-depth image pairs.  The ASUS Xtion Pro 3D sensor has the ability to capture RGB images and depth images at the same but there is an offset calibration required in order to align the RGB and depth images since the physical location of each camera is offset by a few centimeters.  
+In order to train a model to map RGB images to depth images I needed to collect example RGB-depth image pairs where the pixels in the RGB image aligned exactly to the depth values in the depth image.  The ASUS Xtion Pro 3D sensor has the ability to capture RGB images and depth images at the same but, as I mentioned earlier, there is an offset calibration required in order to align the RGB and depth images exactly since the physical location of each camera is offset by a few centimeters.  
 
-Another calibration that needs to be done is removing the "fishbowl" effect of the monocular camera.  Since the camera lens is curved, there is a slight curvature in the images that it captures.  [This](http://wiki.ros.org/camera_calibration/Tutorials/MonocularCalibration) tutorial takes you through the process of calibrating a monocular camera to remove the fishbowl effect.  
+Another calibration that was required was removing the "fishbowl" effect of the monocular camera.  Since the camera lens is curved, there is a slight curvature in the images that it captures. This is a subtle effect that normally wouldn't pose issues for most computer vision tasks however since this particular task is sensitive to pixel-to-pixel variations, this is something that could not be ignored. Luckily, [this](http://wiki.ros.org/camera_calibration/Tutorials/MonocularCalibration) easy to follow tutorial goes through the process of calibrating a monocular camera to remove the fishbowl effect.  
 
-Once both of these calibrations are complete, you are able to capture sufficiently aligned RGB-depth image pairs.  However, rather than walking around and capturing the image pairs by hand, I decided to put the robot to work and automatically capture the image pairs by driving the robot around and taking images at 5 second intervals.  The result was a dataset of 8079 640x480 RGB-depth image pairs.
+Once both of these calibrations were complete, I could use the 3D sensor to capture a variety RGB-depth image pairs simply by placing the sensor in different environments.  However, rather than walking around and capturing the image pairs by hand, I decided to put the robot to work and automatically capture the image pairs by driving the robot around and saving image pairs at 5 second intervals.  The result was a dataset of 8,079 RGB-depth image pairs with a resolution of 640x480.  Here's a few examples from my dataset:
 
 ![rgb_set_of_5](/images/real-time_depth_prediction/raw_rgb_example_set.png)
 ![depth_set_of_5](/images/real-time_depth_prediction/raw_depth_example_set.png)
 
 ## Data preprocessing
-These image pairs aren't bad but you'll notice that there are is a lot of white space, which represents NAN values.  These NAN values come from two sources: 1) misreadings from the sensor and 2) the alignment shift to match the RGB image.  The sensor has a minimum and maximum distance with which it can measure depths and so objects too close or too far away will be misread.  In order to align the depth map to the RGB image, the whole depth map has to be shifted and the result is that a portion of the edges will have not have any measurements.
+These image pairs aren't bad but you'll notice that there is quite a bit of white space, which represents NAN, or invalid, values.  These NAN values come from two sources: 1) misreadings from the sensor and 2) the alignment shift used to align the depth pixels with the RGB pixels.  The first problem arises since the sensor has a minimum and maximum distance with which it can measure depths and so objects too close or too far away will be misread.  This is simply a limitation in the hardware and no explicit solution can be used to fix it.  As far as the second problem goes, in order to align the depth map to the RGB image, the whole depth map had to be shifted and the consequence is that a portion of the edges have no measurements.  Both of these problems were mostly remedied using a few clever interpolation techniques.
 
-Depth images with a significant amount of NAN values, say greater than 25%, I'll just remove.  For the remainder, I'll apply the following algorithm:
+Firstly, depth images with a significant amount of NAN values, say greater than 25%, were thrown out.  For the remainder, I applied the following algorithm:
 1. 2D interpolation to fill the inner NAN values
 2. Horizontal and vertical linear interpolations to fill the edges x 2 (applied second time to fill corners)
 3. Smooth interpolated values by applying an average pool
 4. Fill any remaining NAN values with the mean value of the whole depth image
 
-The result looks something like this:
+The code for the data preprocessing is linked here:
+
+The result looks like this:
 
 ![raw_depth_image](/images/real-time_depth_prediction/depth_before_preproc.png) ![preprocessed_depth_image](/images/real-time_depth_prediction/depth_after_preproc.png)
 
-The code for this algorithm is linked here:
-
-In addition to this preprocessing, I also apply the following data augmentation methods to greatly increase my data set size:
+With cleaned data, another issue with the dataset was the relatively small number of examples.  I applied the following data augmentation methods to greatly increase my data set size:
 1. Random scale up to 50% of the original image size
 2. Random rotation up to 5 degrees in either direction
 3. Random flip about the y-axis
@@ -64,6 +66,9 @@ In addition to this preprocessing, I also apply the following data augmentation 
 5. Random contrast multiplier
 6. Random brightness multiplier
 
+The code for the data augmentation is linked here:
+
+Here's a before and after example of an RGB-depth image pair going through random augmentation:
 ![before_augmentation_example](/images/real-time_depth_prediction/rgb-depth_example.png)
 ![after_augmentation_example](/images/real-time_depth_prediction/rgb-depth_augmented_example.png)
 
@@ -72,24 +77,30 @@ My model architecture is largely based off of the work of Eigen et al. [1] who u
 
 ![cnn_architecture](/images/real-time_depth_prediction/eigen_depth_cnn_net_architecture.png)
 
-The first CNN stack takes the RGB image as an input and predicts a coarse global-scale depth map at a lower resolution.  The second CNN stack takes both the RGB image and the coarse prediction as inputs and predicts a fine-scaled depth map.  The predictions are scaled up to its original image size using a deconvolutional layer.  
+The first CNN stack takes the RGB image as an input and predicts a coarse global-scale depth map at a low resolution.  The second CNN stack takes both the RGB image and the coarse prediction as inputs and predicts a finer-scaled depth map.  The predictions are scaled up to its original image size using a deconvolutional layer.  
 
-I use the 16-layer VGG net as my coarse network and apply batch norm at every convolutional layer.  I also try adding a mean-variance normalization at the output, which leads to much better stability at the output.  The downside of using an MVN layer is that the outputs don't represent true depth values but rather a relative depth map.  The input images are also scaled down to a 320x240 resolution.  The code for the model is found here:
+My variation used the 16-layer VGG net as my coarse network and batch normalization layers after every convolutional layer.  I also try adding a mean-variance normalization at the output, which leads to much better stability at the output.  The downside of using an MVN layer is that the outputs don't represent true depth values but rather a relative depth map.  The input images are also scaled down to a 320x240 resolution.  
 
-The model is trained with SGD with a starting learning rate 1e-9 and a batch size of 64.  Here are some example outputs:
+The code for the model is found here:
+
+The model is trained with SGD with a starting learning rate 1e-9 and a batch size of 64.  Here are some example model predictions:
 
 ![depth_net_results](/images/real-time_depth_prediction/DepthNet_results.png)
 
 ## Robotic deployment
-To deploy this model in real-time, the model will have to be pruned significantly in order to decrease the computation time per frame.  The easiest way to do this is to lower the resolution of the input images and interpolate the output values back to the original size.  I trained a much slimmer model with an input resolution of 80x60.  Deployed on the TX1, the FPS is still pretty low: [video](https://www.youtube.com/watch?v=odSl6qXdgyM)
+In order to deploy this model in real-time, the model had significantly compressed in order to decrease the computational load.  The easiest way to do this is to lower the resolution of the input images and interpolate the output values back to the original size.  I trained a much slimmer model with an input resolution of 80x60.  I deployed this slimmer model on the TX1 and a video can be found here:  [video](https://www.youtube.com/watch?v=odSl6qXdgyM)
 [![depth_net_ros](/images/real-time_depth_prediction/real_time_depth_net_screenshot.png)](https://www.youtube.com/watch?v=odSl6qXdgyM)
 
+There is definitely a delay in the model predictions and the inference speed is not quite the 10 FPS that I had hoped but the overall prediction quality was promising.
+
 ## Future improvements
-The depth predictions shown above are only relative depth maps due to the output normalization layer.  In order to predict true depth values, the model could be better stabilized with extra CNN stacks that predict different levels of coarseness or by simply collecting more data.  
+One of the biggest limitations of my model was that it used a normalization layer on the outputs in order to stabilize the predictions.  The consequence of using this layer is that the depth predictions shown above are only relative depth maps and actual distance measurements cannot be inferred.  In order to predict true depth values, the model could be better stabilized with extra CNN stacks that predict different levels of coarseness or by simply collecting more data.  
 
-In order to achieve true real-time speeds, more efficient model architectures such as AlexNet or ResNet could be used.  
+I didn't spend too much time on optimizing the model for real-time speeds so there are definitely huge opportunities for improvement there.  One suggestion could be to use more efficient model architectures such as AlexNet or ResNet.  Also, removing slow layers such as batch normalization and any data preprocessing layers could speed up inference.
 
-Overall, this was a fun project and I learned a lot from going through the whole end-to-end process of collecting data and deploying on hardware.  If you have any questions or suggestions please feel free to contact me.
+Overall, this was a fun and fairly successful project and I learned a lot from going through the whole end-to-end process.  It's always fun to get a robot involved in data science.
+
+If you have any questions or suggestions please feel free to contact me.
 
 ## Citations
 [1] D. Eigen, C. Puhrsch, and R. Fergus. Depth Map Prediction from a Single Image using a Multi-Scale Deep Network. In NIPS 2014.
