@@ -52,7 +52,7 @@ Firstly, depth images with a significant amount of NAN values, say greater than 
 3. Smooth interpolated values by applying an average pool
 4. Fill any remaining NAN values with the mean value of the whole depth image
 
-The code for the data preprocessing is linked [here](https://github.com/pgigioli/depth_net/blob/master/data_preprocess.py):
+The code for the data preprocessing is linked [here](https://github.com/pgigioli/depth_net/blob/master/data_preprocess.py).
 
 The result looks like this:
 
@@ -66,7 +66,7 @@ With cleaned data, another issue with the dataset was the relatively small numbe
 5. Random contrast multiplier
 6. Random brightness multiplier
 
-The code for the data augmentation is linked [here](https://github.com/pgigioli/depth_net/blob/master/data_augmentation.py):
+The code for the data augmentation is linked [here](https://github.com/pgigioli/depth_net/blob/master/data_augmentation.py).
 
 Here's a before and after example of an RGB-depth image pair going through random augmentation:
 ![before_augmentation_example](/images/real-time_depth_prediction/rgb-depth_example.png)
