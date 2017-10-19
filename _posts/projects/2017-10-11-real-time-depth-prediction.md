@@ -89,7 +89,7 @@ The model is trained with SGD with a starting learning rate 1e-9 and a batch siz
 
 ## Robotic deployment
 In order to deploy this model in real-time, the model had significantly compressed in order to decrease the computational load.  The easiest way to do this is to lower the resolution of the input images and interpolate the output values back to the original size.  I trained a much slimmer model with an input resolution of 80x60.  I deployed this slimmer model on the TX1 and a video can be found here:  [video](https://www.youtube.com/watch?v=odSl6qXdgyM)
-[![depth_net_ros](/images/real-time_depth_prediction/real_time_depth_net_screenshot.png)](https://www.youtube.com/watch?v=odSl6qXdgyM)
+[![depth_net_ros](/images/real-time_depth_prediction/real_time_depth_net_screenshot_icon.png){:height="200px"}](https://www.youtube.com/watch?v=odSl6qXdgyM)
 
 There is definitely a delay in the model predictions and the inference speed is not quite the 10 FPS that I had hoped but the overall prediction quality was promising.
 
