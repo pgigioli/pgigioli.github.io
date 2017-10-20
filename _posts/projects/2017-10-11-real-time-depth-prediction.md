@@ -81,7 +81,7 @@ The first CNN stack takes the RGB image as an input and predicts a coarse global
 
 My model variation used the 16-layer VGG net as my coarse network with batch normalization layers after every convolutional layer.  I also experimented with adding a mean-variance normalization at the output, which leads to much better stability at the output.  The downside of using an MVN layer is that the outputs don't represent true depth values but rather a relative depth map.  The input images are also scaled down to a 320x240 resolution.  
 
-The code for the model is found here: https://github.com/pgigioli/depth_net/blob/master/depth_net.ipynb
+The code for the model is found [here](https://github.com/pgigioli/depth_net/blob/master/depth_net.ipynb)
 
 The model is trained with SGD with a starting learning rate 1e-9 and a batch size of 64.  Here are some example model predictions:
 
