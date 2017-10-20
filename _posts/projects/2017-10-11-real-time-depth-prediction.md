@@ -2,7 +2,7 @@
 title:  "Real-time Depth Prediction"
 date:   2017-10-11 23:05:33 -0400
 thumbnail_url: /images/real-time_depth_prediction/real_time_depth_net_screenshot.png
-description: "I trained a CNN model to perform depth prediction from single RGB images and deployed the model in real-time from a webcam feed.  RGB-depth image pairs were collected automatically using a robot equipped with a 3D sensor."
+description: "I trained a CNN model to predict depth from single RGB images and I deployed the model in real-time from a webcam feed.  RGB-depth image pairs were collected automatically using a robot equipped with a 3D sensor."
 ---
 
 ## Contents
@@ -17,7 +17,7 @@ description: "I trained a CNN model to perform depth prediction from single RGB 
 ## Overview
 Objectives:
 1. Automated data collection using a mobile robot
-2. Real-time model inference speeds
+2. Real-time depth predictions from a webcam
 
 The goal of this project was to train a Convolutional Neural Network (CNN) to perform depth prediction from single images in real-time.  By "real-time" I mean that the model should be able to receive images from a webcam feed and make continuous predictions.  As an added bonus, I incorporated a robot into the mix and used it to automatically collect RGB-depth image pairs for training as well as demonstrate a live application of real-time depth prediction. This project was done completely in-house (no open source datasets were used) and end-to-end (from data collection to robotic deployment).  
 
@@ -38,13 +38,13 @@ In order to train a model to map RGB images to depth images I needed to collect 
 
 Another calibration that was required was removing the "fishbowl" effect of the monocular camera.  Since the camera lens is curved, there is a slight curvature in the images that it captures. This is a subtle effect that normally wouldn't pose issues for most computer vision tasks however since this particular task is sensitive to pixel-to-pixel variations, this is something that could not be ignored. Luckily, [this](http://wiki.ros.org/camera_calibration/Tutorials/MonocularCalibration) easy to follow tutorial goes through the process of calibrating a monocular camera to remove the fishbowl effect.  
 
-Once both of these calibrations were complete, I could use the 3D sensor to capture a variety RGB-depth image pairs simply by placing the sensor in different environments.  However, rather than walking around and capturing the image pairs by hand, I decided to put the robot to work and automatically capture the image pairs by driving the robot around and saving image pairs at 5 second intervals.  The result was a dataset of 8,079 RGB-depth image pairs with a resolution of 640x480.  Here's a few examples from my dataset:
+Once both of these calibrations were complete, I could use the 3D sensor to capture a variety RGB-depth image pairs simply by placing the sensor in different environments.  However, rather than walking around and capturing the image pairs by hand, I decided to put the robot to work and automatically capture the image pairs by driving the robot around and saving image pairs at 5 second intervals.  The result was a dataset of 8,079 RGB-depth image pairs with a resolution of 640x480.  Here are a few examples from my dataset:
 
 ![rgb_set_of_5](/images/real-time_depth_prediction/raw_rgb_example_set.png)
 ![depth_set_of_5](/images/real-time_depth_prediction/raw_depth_example_set.png)
 
 ## Data preprocessing
-These image pairs aren't bad but you'll notice that there is quite a bit of white space, which represents NAN, or invalid, values.  These NAN values come from two sources: 1) misreadings from the sensor and 2) the alignment shift used to align the depth pixels with the RGB pixels.  The first problem arises since the sensor has a minimum and maximum distance with which it can measure depths and so objects too close or too far away will be misread.  This is simply a limitation in the hardware and no explicit solution can be used to fix it.  As far as the second problem goes, in order to align the depth map to the RGB image, the whole depth map had to be shifted and the consequence is that a portion of the edges have no measurements.  Both of these problems were mostly remedied using a few clever interpolation techniques.
+These image pairs aren't bad but you'll notice that there is quite a bit of white space, which represents NAN, or invalid, values.  These NAN values come from two sources: 1) misreadings from the sensor and 2) the alignment shift used to align the depth pixels with the RGB pixels.  The first problem arises because the sensor has a minimum and maximum distance with which it can measure depths. Objects too close or too far away from the camera will be misread.  This is simply a limitation in the hardware and no explicit solution can be used to fix it.  As far as the second problem goes, in order to align the depth map to the RGB image, the whole depth map had to be shifted and the consequence is that a portion of the edges have no measurements.  Both of these problems were mostly remedied using a few clever interpolation techniques.
 
 Firstly, depth images with a significant amount of NAN values, say greater than 25%, were thrown out.  For the remainder, I applied the following algorithm:
 1. 2D interpolation to fill the inner NAN values
@@ -79,16 +79,16 @@ My model architecture is largely based off of the work of Eigen et al. [1] who u
 
 The first CNN stack takes the RGB image as an input and predicts a coarse global-scale depth map at a low resolution.  The second CNN stack takes both the RGB image and the coarse prediction as inputs and predicts a finer-scaled depth map.  The predictions are scaled up to its original image size using a deconvolutional layer.  
 
-My variation used the 16-layer VGG net as my coarse network and batch normalization layers after every convolutional layer.  I also try adding a mean-variance normalization at the output, which leads to much better stability at the output.  The downside of using an MVN layer is that the outputs don't represent true depth values but rather a relative depth map.  The input images are also scaled down to a 320x240 resolution.  
+My model variation used the 16-layer VGG net as my coarse network with batch normalization layers after every convolutional layer.  I also experimented with adding a mean-variance normalization at the output, which leads to much better stability at the output.  The downside of using an MVN layer is that the outputs don't represent true depth values but rather a relative depth map.  The input images are also scaled down to a 320x240 resolution.  
 
-The code for the model is found here:
+The code for the model is found here: https://github.com/pgigioli/depth_net/blob/master/depth_net.ipynb
 
 The model is trained with SGD with a starting learning rate 1e-9 and a batch size of 64.  Here are some example model predictions:
 
 ![depth_net_results](/images/real-time_depth_prediction/DepthNet_results.png)
 
 ## Robotic deployment
-In order to deploy this model in real-time, the model had significantly compressed in order to decrease the computational load.  The easiest way to do this is to lower the resolution of the input images and interpolate the output values back to the original size.  I trained a much slimmer model with an input resolution of 80x60.  I deployed this slimmer model on the TX1 and a video can be found here:  [video](https://www.youtube.com/watch?v=odSl6qXdgyM)
+In order to deploy this model in real-time, the model had to be significantly compressed in order to decrease the computational load.  The easiest way to do this is to lower the resolution of the input images and interpolate the output values back to the original size.  I trained a much slimmer model with an input resolution of 80x60.  I deployed this slimmer model on the TX1 and a video can be found here:  [video](https://www.youtube.com/watch?v=odSl6qXdgyM)
 [![depth_net_ros](/images/real-time_depth_prediction/real_time_depth_net_screenshot_icon.png){:height="200px"}](https://www.youtube.com/watch?v=odSl6qXdgyM)
 
 There is definitely a delay in the model predictions and the inference speed is not quite the 10 FPS that I had hoped but the overall prediction quality was promising.
