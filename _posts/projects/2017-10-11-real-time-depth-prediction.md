@@ -2,7 +2,7 @@
 title:  "Real-time Depth Prediction"
 date:   2017-10-11 23:05:33 -0400
 thumbnail_url: /images/real-time_depth_prediction/real_time_depth_net_screenshot.png
-description: "I trained a CNN model to predict depth from single RGB images and I deployed the model in real-time from a webcam feed.  RGB-depth image pairs were collected automatically using a robot equipped with a 3D sensor."
+description: "Convolutional Neural Network model predicting depth from single RGB images and deployed in real-time from a webcam feed.  RGB-depth image pairs were collected automatically using a robot equipped with a 3D sensor."
 ---
 
 ## Contents

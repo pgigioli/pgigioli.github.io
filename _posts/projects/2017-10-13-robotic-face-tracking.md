@@ -1,7 +1,7 @@
 ---
 title: "Robotic Face Tracking"
 thumbnail_url: /images/robotic_face_tracking/face_tracking_screenshot.png
-description: "I developed a robotic face tracking system that uses a deep learning model to detect faces and control a motorized webcam to keep detected faces centered in the field of view of the robot"
+description: "Robotic face tracking system that uses a deep learning model to detect faces and control a motorized webcam to keep detected faces centered in the field of view of the robot."
 ---
 
 ## Contents
@@ -18,9 +18,9 @@ Objectives:
 1. Develop a face detection model with real-time inference speeds (>10 FPS)
 2. Develop a face tracking algorithm that controls a motorized webcam to keep detected faces in the center of view
 
-The fields of robotics and machine learning have a natural symbiotic relationship.  On one hand, robots benefit from the "intelligence" that comes from machine learning models that allow them to make better decisions and interact more "human-like" whereas machine learning models indulge the vast variety of data that robots can obtain through sensor readings and interactions with people and environments.  The collaboration of these two fields is leading to extraordinary possibilities but accomplishing this collaboration is far from simple: one must combine the typical plights of data science while wrestling with the uncooperativeness of hardware.
+The fields of robotics and machine learning have a natural symbiotic relationship.  On one hand, robots benefit from the "intelligence" that comes from machine learning models that allow them to make better decisions and interact more "human-like" whereas machine learning models indulge the spectrum of data that robots can obtain through sensor readings and interactions with people and environments.  The collaboration of these two fields is leading to extraordinary possibilities but accomplishing this collaboration is far from simple: one must combine the typical plights of data science while wrestling with the uncooperativeness of hardware.
 
-Nonetheless, I attempted to take on this challenge by developing a robotic face tracking system that uses deep learning to detect faces from the robot's webcam.  This project consists of the full end-to-end process of collecting and labelling training data, training the deep learning model, integrating the model into the robotic system, and deploying the system in real-time.  
+Nonetheless, in this post I'll be exploring an application of robotics with deep learning by developing a face tracking system that uses deep learning to detect faces from the robot's webcam.  This project consists of the full end-to-end process of collecting and labelling training data, training the deep learning model, integrating the model into the robotic system, and deploying the system in real-time.  
 
 Constraints:
 1. Model inference must be done locally on the robot and cannot use external cloud resources
