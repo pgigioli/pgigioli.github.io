@@ -4,7 +4,7 @@ thumbnail_url: /images/abstractive-text-summarization/seq2seq_attn_diagram.png
 description: "Seq2seq recurrent neural network applied to abstractive title generation of medical documents using both supervised learning and reinforcement learning formulations."
 ---
 
-*Full code for this post can be found [here](https://github.com/pgigioli/PubMed_Text_Summarization)*
+*Full code for this post can be found [here](https://github.com/pgigioli/pubmed_title_generation)*
 
 ## Contents
 1. Overview
